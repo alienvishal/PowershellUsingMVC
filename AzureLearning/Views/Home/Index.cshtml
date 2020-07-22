@@ -1,0 +1,74 @@
+﻿@using System.Management.Automation;
+@model AzureLearning.Models.ResourceGroup
+
+@{
+    ViewBag.Title = "Home Page";
+}
+
+@if (Html.ValidationMessage("error") != null)
+{
+    <div class="alert alert-primary" role="alert">
+        @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+    </div>
+}
+@using (Html.BeginForm("RunScript", "Home", FormMethod.Post, new { @class = "form-inline", @id = "frmGetRG" }))
+{
+    @Html.LabelFor(m => m.SelectedSubscription, "Subscription", new { @class = "mr-sm-2" })
+    @Html.DropDownListFor(m => m.SelectedSubscription, new SelectList(ViewBag.SubLists), "Select Subscription", new { @class = "form-control mb-2 mr-sm-2" })
+    @Html.LabelFor(m => m.Location, "Location", new { @class = "mr-sm-2" })
+    @Html.DropDownListFor(m => m.Location, new SelectList(ViewBag.Location), "Select Location", new { @class = "form-control  mb-2 mr-sm-2" })
+    <button type="submit" class="btn btn-primary" id="run">
+        Run
+        <span class="spinner-border spinner-border-sm" id="spinner" style="display:none;"></span>
+    </button>
+}
+
+<br />
+@if (ViewBag.Result != null)
+{
+    <table class="table table-striped" id="tb1">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Resource Group</th>
+                <th scope="col">Provisioning State</th>
+                <th scope="col">Location</th>
+                <th scope="col">Tags</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ViewBag.Result.Count == 0)
+            {
+                <tr>
+                    <td colspan="5">No Resource Group Found</td>
+                </tr>
+            }
+            else
+            {
+                int count = 1;
+                foreach (PSObject item in ViewBag.Result)
+                {
+                    <tr>
+                        <td>@count</td>
+                        <td>@item.Properties["ResourceGroupName"].Value</td>
+                        <td>@item.Properties["ProvisioningState"].Value</td>
+                        <td>@item.Properties["Location"].Value</td>
+                        <td>Under Process</td>
+                    </tr>
+                    count++;
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@section scripts{
+    <script>
+        $('#frmGetRG').submit(function () {
+            $('#spinner').show()
+            $('#run').attr('disabled', true)
+        })
+        $('#tb1').dataTable();
+    </script>
+
+}

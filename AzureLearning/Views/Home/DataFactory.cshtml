@@ -1,0 +1,113 @@
+﻿@using System.Management.Automation;
+@model AzureLearning.Models.DataFactory
+
+@{
+    ViewBag.Title = "DataFactory";
+}
+
+@if (Html.ValidationMessage("error") != null)
+{
+    <div class="alert alert-primary" role="alert">
+        @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+    </div>
+}
+@using (Html.BeginForm("DataFactory", "Home", FormMethod.Post, new { @class = "form-inline", @id = "frmGetDF" }))
+{
+    @Html.LabelFor(m => m.SelectedSubscription, "Subscription", new { @class = "mr-sm-2" })
+    @Html.DropDownListFor(m => m.SelectedSubscription, new SelectList(ViewBag.SubLists), "Select Subscription", new { @class = "form-control mb-2 mr-sm-2" })
+    <label for="RGValue" id="lblRG" class="mr-sm-2" style="display:none">Resource Group</label>
+    <select class="form-control mb-2 mr-sm-2" id="RGValue" name="RGValue" data-val="true" style="display:none">
+        <option value="">Select Resource Group</option>
+    </select>
+    <button type="submit" class="btn btn-primary" id="run">
+        Run
+        <span class="spinner-border spinner-border-sm" id="spinner" style="display:none;"></span>
+    </button>
+}
+
+<br />
+@if (ViewBag.Result != null)
+{
+    <table class="table table-striped" id="tb1">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">DataFactory Name</th>
+                <th scope="col">Resource Group Name</th>
+                <th scope="col">Location</th>
+                <th scope="col">Provisioning State</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ViewBag.Result.Count == 0)
+            {
+                <tr>
+                    <td colspan="5">No Resource Group Found</td>
+                </tr>
+            }
+            else
+            {
+                int count = 1;
+                foreach (PSObject item in ViewBag.Result)
+                {
+                    <tr>
+                        <td>@count</td>
+                        <td>@item.Properties["DataFactoryName"].Value</td>
+                        <td>@item.Properties["ResourceGroupName"].Value</td>
+                        <td>@item.Properties["Location"].Value</td>
+                        <td>@item.Properties["ProvisioningState"].Value</td>
+                    </tr>
+                    count++;
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@section scripts{
+    <script>
+        $('#SelectedSubscription').change(function () {
+            var selectSub = $('#SelectedSubscription').val();
+            $.ajax({
+                type: 'Get',
+                url: '@Url.Action("GetAllResourceGroup", "Home")',
+                data: { subscription: selectSub },
+                contentType: 'application/json',
+                dataType : 'json',
+                beforeSend: function (xhr) {
+                    $('#loader').show();
+                },
+                success: function (data) {
+                    console.log("success")
+
+                    if (data != null) {
+                        $('#lblRG').show();
+                        $('#RGValue').show();
+                       
+                        for (var i = 0; i < data.length; i++)
+                        {
+                            $('#RGValue').append("<option>" + data[i] + "</option>")
+                        }
+                       
+                    }
+                    console.log(data.length)
+                },
+                error: function (err) {
+                    var errMsg = err.status + ': ' + err.statusText
+                    console.log(err)
+                    $('.alert.alert-primary').append("<strong>Error!!</strong> " + errMsg );
+                },
+                complete: function (xhr) {
+                    $('#loader').hide();
+                }
+            });
+        })
+
+        $('#frmGetDF').submit(function () {
+            $('#spinner').show()
+            $('#run').attr('disabled', true)
+        })
+        $('#tb1').dataTable();
+    </script>
+
+}
